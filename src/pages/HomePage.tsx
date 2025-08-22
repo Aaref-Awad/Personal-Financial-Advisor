@@ -1,5 +1,5 @@
 import React from "react";
-import UploadZone from "../features/csv/components/UploadZone";
+import UploadZone from "../components/UploadZone";
 
 const HomePage: React.FC = () => {
   return (
