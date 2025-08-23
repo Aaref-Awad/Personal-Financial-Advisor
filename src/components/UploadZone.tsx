@@ -1,74 +1,72 @@
 import React, { useCallback, useState } from "react";
-import Papa from "papaparse";
-import { nanoid } from "nanoid";
-
-const REQUIRED_HEADERS = [
-  "Account Type",
-  "Account Number",
-  "Transaction Date",
-  "Cheque Number",
-  "Description 1",
-  "Description 2",
-  "CAD$",
-  "USD$",
-];
-
-function validateHeaders(headers: string[]): boolean {
-  return JSON.stringify(headers) === JSON.stringify(REQUIRED_HEADERS);
-}
+import { parseCSV, type ParsedRow } from "../utils/parseCSV";
+import { validateRows } from "../utils/schemaValidation";
 
 const UploadZone: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [rows, setRows] = useState<ParsedRow[]>([]);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const parseFile = useCallback((file: File) => {
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: async (results) => {
-        const headers = results.meta.fields || [];
-        if (!validateHeaders(headers)) {
-          console.error("Invalid CSV schema:", headers);
-          alert("CSV headers do not match required schema.");
-          return;
-        }
+  const resetFileInput = () => {
+    setSelectedFile(null);
+    const input = document.getElementById("csvInput") as HTMLInputElement;
+    if (input) input.value = "";
+  };
 
-        const rowsWithId = (results.data as Record<string, string | string[]>[]).map((row) => {
-          delete row.__parsed_extra;
-          return { id: nanoid(), ...row };
-        });
+  const handleParse = useCallback(async () => {
+    if (!selectedFile) return;
+    setErrorMsg(null);
+    setLoading(true);
 
-        console.log("Parsed rows with IDs:", rowsWithId);
-
-        setSelectedFile(null);
-        const input = document.getElementById("csvInput") as HTMLInputElement;
-        if (input) input.value = "";
-      },
-      error: (err) => {
-        console.error("Parse error:", err);
-      },
-    });
-  }, []);
+    try {
+      const parsedRows = await parseCSV(selectedFile);
+      const validatedRows = await validateRows(parsedRows);
+      setRows(validatedRows);
+    } catch (error) {
+      setRows([]);
+      setErrorMsg((error as Error).message);
+    } finally {
+      setLoading(false);
+      resetFileInput();
+    }
+  }, [selectedFile]);
 
   const onDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    setErrorMsg(null);
     const file = e.dataTransfer.files?.[0];
-    if (file) setSelectedFile(file);
+    if (file && (file.type === "text/csv" || file.name.endsWith(".csv"))) {
+      setSelectedFile(file);
+    } else {
+      setErrorMsg("Please upload a valid .csv file");
+    }
   }, []);
 
   const onSelectFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setErrorMsg(null);
     const file = e.target.files?.[0];
-    if (file) setSelectedFile(file);
+    if (file && (file.type === "text/csv" || file.name.endsWith(".csv"))) {
+      setSelectedFile(file);
+    } else if (file) {
+      setErrorMsg("Please upload a valid .csv file");
+    }
   }, []);
 
   return (
-    <div className="flex flex-col items-center space-y-4">
+    <div className="flex flex-col items-center space-y-4 max-w-5xl mx-auto">
+      {/* Drop zone */}
       <div
         onDrop={onDrop}
         onDragOver={(e) => e.preventDefault()}
-        className="border-2 border-dashed border-gray-400 rounded p-8 text-center cursor-pointer hover:bg-gray-50 w-full"
+        className={`border-2 border-dashed rounded p-8 text-center cursor-pointer w-full transition-colors duration-200 ${
+          selectedFile
+            ? "border-blue-500 bg-blue-50"
+            : "border-gray-400 hover:bg-gray-50"
+        }`}
         onClick={() => document.getElementById("csvInput")?.click()}
       >
-        <p className="mb-2">
+        <p className="mb-2 font-medium">
           {selectedFile
             ? `Selected File: ${selectedFile.name}`
             : "Drag & drop your CSV file here, or click to select."}
@@ -82,17 +80,63 @@ const UploadZone: React.FC = () => {
         />
       </div>
 
+      {/* Inline error */}
+      {errorMsg && (
+        <div className="w-full text-red-700 bg-red-50 border border-red-200 px-4 py-2 rounded">
+          {errorMsg}
+        </div>
+      )}
+
+      {/* Parse + Validate button */}
       <button
-        onClick={() => selectedFile && parseFile(selectedFile)}
-        disabled={!selectedFile}
+        onClick={handleParse}
+        disabled={!selectedFile || loading}
         className={`px-4 py-2 rounded text-white transition-all duration-300 ${
-          selectedFile
+          selectedFile && !loading
             ? "bg-blue-500 hover:bg-blue-600 shadow-lg shadow-blue-400/50"
             : "bg-gray-400 cursor-not-allowed"
         }`}
       >
-        Parse File
+        {loading ? "Processing..." : "Parse & Validate"}
       </button>
+
+      {/* CSV preview */}
+      {rows.length > 0 && !loading && (
+        <div className="w-full overflow-x-auto border border-gray-300 rounded p-4 bg-white shadow-sm">
+        <table className="min-w-full text-sm">
+              <thead>
+                <tr>
+                  {Object.keys(rows[0])
+                    .filter((header) => header !== "__parsed_extra")
+                    .map((header) => (
+                      <th
+                        key={header}
+                        className="px-2 py-1 border-b text-left font-semibold bg-gray-50"
+                      >
+                        {header}
+                      </th>
+                    ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => {
+                  const filteredKeys = Object.keys(row).filter(
+                    (key) => key !== "__parsed_extra"
+                  );
+                  return (
+                    <tr key={row.id}>
+                      {filteredKeys.map((key) => (
+                      <td key={key} className="px-2 py-1 border-b">
+                        {(row as any)[key]}
+                      </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+        </div>
+      )}
     </div>
   );
 };
