@@ -34,7 +34,7 @@ export function parseCSV(file: File): Promise<ParsedRow[]> {
     Papa.parse<Omit<ParsedRow, "id">>(file, {
       header: true,
       skipEmptyLines: true,
-      transformHeader: normalizeHeader, // ✅ normalize right here
+      transformHeader: normalizeHeader,
       complete: (results) => {
         const rowsWithId: ParsedRow[] = results.data.map((row) => ({
           id: nanoid(),
