@@ -13,9 +13,22 @@ export interface ParsedRow {
   "USD$": string;
 }
 
+// Add this interface for IndexedDB storage
+export interface DBTransaction {
+  id: string;
+  accountType: string;
+  accountNumber: string;
+  transactionDate: string;
+  chequeNumber: string;
+  description1: string;
+  description2: string;
+  cadAmount: string;
+  usdAmount: string;
+}
+
 export const REQUIRED_HEADERS: (Exclude<keyof ParsedRow, "id">)[] = [
   "Account Type",
-  "Account Number",
+  "Account Number", 
   "Transaction Date",
   "Cheque Number",
   "Description 1",
@@ -23,6 +36,21 @@ export const REQUIRED_HEADERS: (Exclude<keyof ParsedRow, "id">)[] = [
   "CAD$",
   "USD$",
 ];
+
+// Add conversion function
+export function convertToDBFormat(row: ParsedRow): DBTransaction {
+  return {
+    id: row.id,
+    accountType: row["Account Type"],
+    accountNumber: row["Account Number"],
+    transactionDate: row["Transaction Date"],
+    chequeNumber: row["Cheque Number"],
+    description1: row["Description 1"],
+    description2: row["Description 2"],
+    cadAmount: row["CAD$"],
+    usdAmount: row["USD$"]
+  };
+}
 
 // Utility to normalize header values
 function normalizeHeader(header: string) {
