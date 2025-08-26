@@ -1,6 +1,8 @@
 import React from "react";
 import UploadZone from "../components/UploadZone";
 import { TransactionsTable } from "../components/dbTableDisplay";
+import { AccountFlowChart } from "../components/chartsDisplay";
+
 
 const HomePage: React.FC = () => {
   return (
@@ -11,6 +13,7 @@ const HomePage: React.FC = () => {
       </p>
       <UploadZone />
       <TransactionsTable />
+      <AccountFlowChart />
     </main>
   );
 };
