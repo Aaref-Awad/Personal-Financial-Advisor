@@ -4,7 +4,7 @@ import { validateRows } from "../utils/schemaValidation";
 
 const UploadZone: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [rows, setRows] = useState<ParsedRow[]>([]);
+  const [,setRows] = useState<ParsedRow[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -99,44 +99,6 @@ const UploadZone: React.FC = () => {
       >
         {loading ? "Processing..." : "Parse & Validate"}
       </button>
-
-      {/* CSV preview */}
-      {rows.length > 0 && !loading && (
-        <div className="w-full overflow-x-auto border border-gray-300 rounded p-4 bg-white shadow-sm">
-        <table className="min-w-full text-sm">
-              <thead>
-                <tr>
-                  {Object.keys(rows[0])
-                    .filter((header) => header !== "__parsed_extra")
-                    .map((header) => (
-                      <th
-                        key={header}
-                        className="px-2 py-1 border-b text-left font-semibold bg-gray-50"
-                      >
-                        {header}
-                      </th>
-                    ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => {
-                  const filteredKeys = Object.keys(row).filter(
-                    (key) => key !== "__parsed_extra"
-                  );
-                  return (
-                    <tr key={row.id}>
-                      {filteredKeys.map((key) => (
-                      <td key={key} className="px-2 py-1 border-b">
-                        {(row as any)[key]}
-                      </td>
-                      ))}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-        </div>
-      )}
     </div>
   );
 };
