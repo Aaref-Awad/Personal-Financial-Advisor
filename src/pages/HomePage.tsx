@@ -1,5 +1,6 @@
 import React from "react";
 import UploadZone from "../components/UploadZone";
+import { TransactionsTable } from "../components/dbTableDisplay";
 
 const HomePage: React.FC = () => {
   return (
@@ -9,6 +10,7 @@ const HomePage: React.FC = () => {
         Upload your CSV to see it parsed locally — nothing leaves your device.
       </p>
       <UploadZone />
+      <TransactionsTable />
     </main>
   );
 };
